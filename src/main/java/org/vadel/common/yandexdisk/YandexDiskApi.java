@@ -24,6 +24,7 @@ import org.vadel.yandexdisk.authorization.OAuthAuthorization;
 
 public class YandexDiskApi {
 	
+	private static final String PARSE_TOKEN = "#access_token=";
 	protected static final String BASE_URI = "https://webdav.yandex.ru";
 	protected static final String BASE_OAUTH_AUTHORIZE_URL = 
 		"https://oauth.yandex.ru/authorize?response_type=token&client_id=";
@@ -85,10 +86,10 @@ public class YandexDiskApi {
 	 * @param value - Response uri
 	 */
 	public void setTokenFromCallBackURI(String uri) {
-		int i1 = uri.indexOf('#');
+		int i1 = uri.indexOf(PARSE_TOKEN);
 		if (i1 < 0)
 			return;
-		i1 ++;
+		i1 += PARSE_TOKEN.length();
 		int i2 = uri.indexOf("&", i1);
 		if (i2 < 0)
 			return;
