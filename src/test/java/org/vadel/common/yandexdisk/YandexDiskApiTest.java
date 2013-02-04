@@ -1,14 +1,16 @@
 package org.vadel.common.yandexdisk;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 
 import org.junit.Test;
 
 public class YandexDiskApiTest {
+
+	private static final int RANGE_START = 2;
 
 	public static String CLIENT_ID;
 	
@@ -20,7 +22,32 @@ public class YandexDiskApiTest {
 	public static final String TEST_FILE1     = TEST_DIR + "Atest-api-file1";
 	public static final String TEST_FILE2     = TEST_DIR + "Btest-api-file2";
 	public static final String TEST_FILE_BODY = "some file body";
+
+	{
+		YandexDiskApi.DEBUG = true;		
+	}
 	
+	@Test
+	public void yandexApiRangeDownloadTest() throws IOException {
+		if (CLIENT_ID == null && LOGIN == null && PASSW == null)
+			loadFromResource();
+		
+		assertNotNull(CLIENT_ID);
+		assertNotNull(LOGIN);
+		assertNotNull(PASSW);
+		YandexDiskApi api = new YandexDiskApi(CLIENT_ID);
+		api.setCredentials(LOGIN, PASSW);
+		api.createFolder(TEST_DIR);
+		api.uploadFile(TEST_FILE, TEST_FILE_BODY);
+
+		String s = YandexDiskApi.getStringFromStream(api.getFileStream(TEST_FILE, RANGE_START));
+		System.out.println(s);
+		assertEquals(s.length(), TEST_FILE_BODY.length() - RANGE_START);
+	 	
+		api.delete(TEST_FILE);
+		api.delete(TEST_DIR);
+	}	
+	/*
 	@Test
 	public void yandexApiTest() throws IOException {
 		if (CLIENT_ID == null && LOGIN == null && PASSW == null)
@@ -41,7 +68,7 @@ public class YandexDiskApiTest {
 //	 	api.move(TEST_FILE, TEST_FILE2);
 		api.delete(TEST_FILE);
 		api.delete(TEST_DIR);
-	}
+	}*/
 	
 	void loadFromResource() throws IOException {
 		InputStream in = this.getClass().getResourceAsStream("/credentials.txt");

@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -23,6 +23,8 @@ import org.vadel.yandexdisk.authorization.BasicAuthorization;
 import org.vadel.yandexdisk.authorization.OAuthAuthorization;
 
 public class YandexDiskApi {
+	
+	public static boolean DEBUG = false;
 	
 	private static final String PARSE_TOKEN = "#access_token=";
 	protected static final String BASE_URI = "https://webdav.yandex.ru";
@@ -100,41 +102,37 @@ public class YandexDiskApi {
 		return auth != null && auth.isValid();
 	}
 	
-//	public long getDiskLimit() {
-//		return -1;
-//	}
-	
-	public void createFolder(String path) throws YandexDiskException {
-		executeWithoutResult(path, MKCOL);
+	public boolean createFolder(String path) {
+		return executeWithoutResult(path, MKCOL);
 	}
 	
-	public void delete(String path) throws YandexDiskException {
-		executeWithoutResult(path, DELETE);
+	public boolean delete(String path) {
+		return executeWithoutResult(path, DELETE);
 	}
 
-	public void copy(String src, String dst) throws YandexDiskException {
+	public boolean copy(String src, String dst) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Destination", dst);
-		executeWithoutResult(src, COPY);
+		return executeWithoutResult(src, COPY);
 	}
 
-	public void move(String src, String dst) throws YandexDiskException {
+	public boolean move(String src, String dst) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Destination", dst);
-		executeWithoutResult(src, MOVE);
+		return executeWithoutResult(src, MOVE);
 	}
 
-	public void uploadFile(String path, InputStream dataStream, long fileLength) throws YandexDiskException {
+	public boolean uploadFile(String path, InputStream dataStream, long fileLength) {
 		InputStreamEntity entity = new InputStreamEntity(dataStream, fileLength);
-		executeWithoutResult(path, PUT, null, entity);
+		return executeWithoutResult(path, PUT, null, entity);
 	}
 
-	public void uploadFile(String path, String content) throws YandexDiskException, UnsupportedEncodingException {
+	public boolean uploadFile(String path, String content) throws UnsupportedEncodingException {
 		StringEntity entity = new StringEntity(content);
-		executeWithoutResult(path, PUT, null, entity);
+		return executeWithoutResult(path, PUT, null, entity);
 	}
 
-	public ArrayList<WebDavFile> getFiles(String path) throws YandexDiskException {
+	public ArrayList<WebDavFile> getFiles(String path) {
 		InputStream in = null;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Depth", "1");
@@ -146,52 +144,53 @@ public class YandexDiskApi {
 		}
 	}
 
-	public InputStream getFileStream(String path) throws YandexDiskException {
+	public InputStream getFileStream(String path) {
 		return getFileStream(path, 0);
 	}
 
-	public InputStream getFileStream(String path, long start) throws YandexDiskException {
+	public InputStream getFileStream(String path, long start) {
 		HashMap<String, String> params = null;
 		if (start > 0) {
 			params = new HashMap<String, String>();
-			params.put("Range", String.valueOf(start));
+			params.put("Range", "bytes=" + String.valueOf(start) + "-");
 		}
 		return execute(path, GET, params);
 	}
 
-	public void executeWithoutResult(String path, String method) throws YandexDiskException {
-		executeWithoutResult(path, method, null, null);
+	public boolean executeWithoutResult(String path, String method) {
+		return executeWithoutResult(path, method, null, null);
 	}
 
-	public void executeWithoutResult(String path, String method, Map<String, String> params) throws YandexDiskException {
-		executeWithoutResult(path, method, params, null);
+	public boolean executeWithoutResult(String path, String method, Map<String, String> params) {
+		return executeWithoutResult(path, method, params, null);
 	}
 
-	public void executeWithoutResult(String path, String method, Map<String, String> params,
-			HttpEntity entity) throws YandexDiskException {
-		InputStream in = null;
-		try {
-			in = execute(path, method, params, entity);
-		} finally {
-			closeQuietly(in);
-		}
+	public boolean executeWithoutResult(String path, String method, Map<String, String> params,
+			HttpEntity entity) {
+		InputStream in = execute(path, method, params, entity);
+		boolean result = in != null;
+		closeQuietly(in);
+		return result;
 	}
 	
-	public InputStream execute(String path, String method) throws YandexDiskException {
+	public InputStream execute(String path, String method) {
 		return execute(path, method, null, null);
 	}
 
-	public InputStream execute(String path, String method, Map<String, String> params) throws YandexDiskException {
+	public InputStream execute(String path, String method, Map<String, String> params) {
 		return execute(path, method, params, null);
 	}
 
 	public InputStream execute(String path, String method, Map<String, String> params,
-			HttpEntity entity) throws YandexDiskException {
+			HttpEntity entity) {
 		if (!isAuthorization())
 			return null;
 		if (path == null || path.trim().length() == 0)
 			path = "/";
 		try {
+			if (DEBUG) {
+				System.out.println("***" + method + " " + path + "***");
+			}
 			WebDavRequest req = new WebDavRequest(BASE_URI + path, method);
 			
 			req.addHeader("Accept", "*/*");
@@ -202,14 +201,29 @@ public class YandexDiskApi {
 			if (entity != null) {
 				req.setEntity(entity);
 			}
+			if (DEBUG) {
+				System.out.println("Request Headers:");
+				System.out.println(req.getRequestLine());
+				for (Header h : req.getAllHeaders()) 
+					System.out.println(h.getName() + ":" + h.getValue());
+			}
 			
 			HttpResponse resp = client.execute(req);
 			if (resp == null)
 				return null;
 
 			int code = resp.getStatusLine().getStatusCode();
-			if (code != 201 && code != 200 && code != 207) {
-				throw new HttpResponseException(code, resp.getStatusLine().getReasonPhrase());
+			if (code != 201 && code != 200 && code != 206 && code != 207) {
+				closeQuietly(resp.getEntity().getContent());
+				return null;
+//				throw new HttpResponseException(code, resp.getStatusLine().getReasonPhrase());
+			}
+			if (DEBUG) {
+				System.out.println("Response Headers");
+				System.out.println(resp.getStatusLine());
+				for (Header h : resp.getAllHeaders()) 
+					System.out.println(h.getName() + ":" + h.getValue());
+				System.out.println();
 			}
 			return resp.getEntity().getContent();
 		} catch (MalformedURLException e) {
@@ -232,10 +246,12 @@ public class YandexDiskApi {
 		BufferedReader reader = new BufferedReader(isr);
 		StringBuilder str = new StringBuilder();
 		String line;
+		boolean notFirst = false;
 		while ((line = reader.readLine()) != null) {
-//			System.out.println(line);
+			if (notFirst)
+				str.append('\n');
 			str.append(line);
-			str.append('\n');
+			notFirst = true;
 		}
 		return str.toString();
 	}
@@ -248,14 +264,4 @@ public class YandexDiskApi {
 				e.printStackTrace();
 			}
 	}
-	
-//	static class RequstCommand {
-//		public String method;
-//		public int okCode;
-//		
-//		public RequstCommand(String method, int code) {
-//			this.method = method;
-//			this.okCode = code;
-//		}
-//	}
 }
