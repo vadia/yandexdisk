@@ -40,7 +40,7 @@ public class YandexDiskApiTest {
 		api.createFolder(TEST_DIR);
 		api.uploadFile(TEST_FILE, TEST_FILE_BODY);
 
-		String s = YandexDiskApi.getStringFromStream(api.getFileStream(TEST_FILE, RANGE_START));
+		String s = api.getFileString(TEST_FILE, RANGE_START);
 		System.out.println(s);
 		assertEquals(s.length(), TEST_FILE_BODY.length() - RANGE_START);
 	 	

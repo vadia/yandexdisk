@@ -2,6 +2,7 @@ package org.vadel.common.yandexdisk;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,7 +28,9 @@ public class YandexDiskApi {
 	public static boolean DEBUG = false;
 	
 	private static final String PARSE_TOKEN = "#access_token=";
-	protected static final String BASE_URI = "https://webdav.yandex.ru";
+	
+	public static final String BASE_URI = "https://webdav.yandex.ru";
+	
 	protected static final String BASE_OAUTH_AUTHORIZE_URL = 
 		"https://oauth.yandex.ru/authorize?response_type=token&client_id=";
 	
@@ -40,7 +43,7 @@ public class YandexDiskApi {
 	static final String PROPFIND  = "PROPFIND";
 	static final String PROPPATCH = "PROPPATCH";
 	
-	final HttpClient client = new DefaultHttpClient();
+//	final HttpClient client = new DefaultHttpClient();
 	
 	protected final String clientId;
 
@@ -132,7 +135,7 @@ public class YandexDiskApi {
 		return executeWithoutResult(path, PUT, null, entity);
 	}
 
-	public ArrayList<WebDavFile> getFiles(String path) {
+	public synchronized ArrayList<WebDavFile> getFiles(String path) {
 		InputStream in = null;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Depth", "1");
@@ -144,28 +147,73 @@ public class YandexDiskApi {
 		}
 	}
 
-	public InputStream getFileStream(String path) {
-		return getFileStream(path, 0);
-	}
-
-	public InputStream getFileStream(String path, long start) {
+	static int BUFFER = 1024;
+	static final int ONE_MB = 1024*1024;
+	static final int TEN_MB = 10*ONE_MB;
+	
+	public synchronized long downloadFile(String path, FileOutputStream fos, long start,
+			OnLoadProgressListener listener) {
 		HashMap<String, String> params = null;
 		if (start > 0) {
 			params = new HashMap<String, String>();
 			params.put("Range", "bytes=" + String.valueOf(start) + "-");
 		}
-		return execute(path, GET, params);
+		InputStream in = null;
+		long lastProgress = -1;
+		try {
+			in = execute(path, GET, params);
+			int n = 0;
+			byte[] buffs = new byte[BUFFER];
+			while((n = in.read(buffs)) > 0) {
+				fos.write(buffs, 0, n);
+				start += n;
+				
+	        	if (listener != null) {
+	        		long progress = start / TEN_MB;
+	        		if (lastProgress != progress) {
+        				listener.onProgress(start);
+	        			lastProgress = progress;
+	        		}
+	        	}
+			}
+			return n;
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} finally {
+			closeQuietly(in);
+		}
+		return -1;
+	}
+	
+	public String getFileString(String path) {
+		return getFileString(path, 0);
 	}
 
-	public boolean executeWithoutResult(String path, String method) {
+	public synchronized String getFileString(String path, long start) {
+		HashMap<String, String> params = null;
+		if (start > 0) {
+			params = new HashMap<String, String>();
+			params.put("Range", "bytes=" + String.valueOf(start) + "-");
+		}
+		try {
+			return getStringFromStream(execute(path, GET, params));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	protected synchronized boolean executeWithoutResult(String path, String method) {
 		return executeWithoutResult(path, method, null, null);
 	}
 
-	public boolean executeWithoutResult(String path, String method, Map<String, String> params) {
+	protected synchronized boolean executeWithoutResult(String path, String method, Map<String, String> params) {
 		return executeWithoutResult(path, method, params, null);
 	}
 
-	public boolean executeWithoutResult(String path, String method, Map<String, String> params,
+	protected synchronized boolean executeWithoutResult(String path, String method, Map<String, String> params,
 			HttpEntity entity) {
 		InputStream in = execute(path, method, params, entity);
 		boolean result = in != null;
@@ -173,15 +221,15 @@ public class YandexDiskApi {
 		return result;
 	}
 	
-	public InputStream execute(String path, String method) {
+	protected InputStream execute(String path, String method) {
 		return execute(path, method, null, null);
 	}
 
-	public InputStream execute(String path, String method, Map<String, String> params) {
+	protected InputStream execute(String path, String method, Map<String, String> params) {
 		return execute(path, method, params, null);
 	}
 
-	public InputStream execute(String path, String method, Map<String, String> params,
+	protected InputStream execute(String path, String method, Map<String, String> params,
 			HttpEntity entity) {
 		if (!isAuthorization())
 			return null;
@@ -207,7 +255,7 @@ public class YandexDiskApi {
 				for (Header h : req.getAllHeaders()) 
 					System.out.println(h.getName() + ":" + h.getValue());
 			}
-			
+			HttpClient client = new DefaultHttpClient();
 			HttpResponse resp = client.execute(req);
 			if (resp == null)
 				return null;
@@ -263,5 +311,11 @@ public class YandexDiskApi {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+	}
+	
+	public static interface OnLoadProgressListener {
+		
+		void onProgress(long progress) throws InterruptedException;
+		
 	}
 }
