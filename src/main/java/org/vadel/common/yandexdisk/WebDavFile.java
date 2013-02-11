@@ -22,13 +22,13 @@ public class WebDavFile {
 	}
 	
 	public String getParentPath() {
-		if (path == null)
+		if (path == null || path.length() == 1)
 			return null;
 		int i = path.lastIndexOf('/');
-		if (i <= 0)
+		if (i < 0)
 			return null;
 		if (i == path.length() - 1)
-			i = path.lastIndexOf('/', i);
-		return path.substring(0, i);
+			i = path.lastIndexOf('/', i - 1);
+		return path.substring(0, i + 1);
 	}
 }

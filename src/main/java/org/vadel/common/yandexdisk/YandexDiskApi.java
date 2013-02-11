@@ -43,7 +43,12 @@ public class YandexDiskApi {
 	static final String PROPFIND  = "PROPFIND";
 	static final String PROPPATCH = "PROPPATCH";
 	
-//	final HttpClient client = new DefaultHttpClient();
+	static int BUFFER = 1024;
+	
+	public static final int ONE_MB = 1024*1024;
+	public static final int TEN_MB = 10*ONE_MB;
+	
+	private long chunkSize = TEN_MB;
 	
 	protected final String clientId;
 
@@ -147,9 +152,15 @@ public class YandexDiskApi {
 		}
 	}
 
-	static int BUFFER = 1024;
-	static final int ONE_MB = 1024*1024;
-	static final int TEN_MB = 10*ONE_MB;
+	public long getChunkSize() {
+		return chunkSize;
+	}
+	
+	public void setChunkSize(long value) {
+		if (value <= 0)
+			return;
+		chunkSize = value;
+	}
 	
 	public synchronized long downloadFile(String path, FileOutputStream fos, long start,
 			OnLoadProgressListener listener) {
@@ -169,7 +180,7 @@ public class YandexDiskApi {
 				start += n;
 				
 	        	if (listener != null) {
-	        		long progress = start / TEN_MB;
+	        		long progress = start / chunkSize;
 	        		if (lastProgress != progress) {
         				listener.onProgress(start);
 	        			lastProgress = progress;
