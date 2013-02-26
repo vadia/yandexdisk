@@ -175,27 +175,37 @@ public class YandexDiskApi {
 			in = execute(path, GET, params);
 			int n = 0;
 			byte[] buffs = new byte[BUFFER];
-			while((n = in.read(buffs)) > 0) {
-				fos.write(buffs, 0, n);
-				start += n;
-				
-	        	if (listener != null) {
+			
+			
+        	if (listener != null) {
+				while((n = in.read(buffs)) > 0) {
+					fos.write(buffs, 0, n);
+					start += n;
+					
 	        		long progress = start / chunkSize;
 	        		if (lastProgress != progress) {
-        				listener.onProgress(start);
+	        			try {
+	        				listener.onProgress(start);
+	        			} catch (InterruptedException e) {
+	        				break;
+	        			}
 	        			lastProgress = progress;
 	        		}
-	        	}
-			}
-			return n;
+				}
+        	} else {
+				while((n = in.read(buffs)) > 0) {
+					fos.write(buffs, 0, n);
+					start += n;
+				}
+        	}
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
 		} finally {
 			closeQuietly(in);
 		}
-		return -1;
+		return start;
 	}
 	
 	public String getFileString(String path) {
