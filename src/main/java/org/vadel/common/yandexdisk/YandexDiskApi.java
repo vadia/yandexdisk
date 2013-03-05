@@ -34,6 +34,8 @@ public class YandexDiskApi {
 	protected static final String BASE_OAUTH_AUTHORIZE_URL = 
 		"https://oauth.yandex.ru/authorize?response_type=token&client_id=";
 	
+	static final String PATH_USER_LOGIN = "/?userinfo";
+	
 	static final String PUT       = "PUT"; 
 	static final String GET       = "GET";
 	static final String MKCOL     = "MKCOL";
@@ -58,14 +60,14 @@ public class YandexDiskApi {
 		this.clientId = clientId;
 	}
 	
-	public String getLogin() {
+	public String getCredentialsLogin() {
 		if (auth instanceof BasicAuthorization)
 			return ((BasicAuthorization) auth).login;
 		else
 			return null;
 	}
 
-	public String getPassword() {
+	public String getCredentialsPassword() {
 		if (auth instanceof BasicAuthorization)
 			return ((BasicAuthorization) auth).pass;
 		else
@@ -108,6 +110,26 @@ public class YandexDiskApi {
 
 	public boolean isAuthorization() {
 		return auth != null && auth.isValid();
+	}
+	
+	public String getUserLogin() {
+		if (auth instanceof BasicAuthorization) {
+			return ((BasicAuthorization) auth).login;
+		} else if (auth instanceof OAuthAuthorization) {
+			InputStream in = null;
+			try {
+				in = execute(PATH_USER_LOGIN, GET, null);
+				String s = getStringFromStream(in);
+				if (s == null)
+					return null;
+				return s.replace("login:", "").trim(); 			
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				closeQuietly(in);
+			}
+		} 
+		return null;
 	}
 	
 	public boolean createFolder(String path) {
@@ -198,6 +220,7 @@ public class YandexDiskApi {
 					start += n;
 				}
         	}
+        
 		} catch (IOException e) {
 			e.printStackTrace();
 //		} catch (InterruptedException e) {
