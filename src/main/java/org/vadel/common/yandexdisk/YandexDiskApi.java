@@ -146,6 +146,8 @@ public class YandexDiskApi {
 		params.put("Depth", "1");
 		try {
 			in = execute(path, PROPFIND, params);
+			if (in == null)
+				return null;
 			return XmlResponseReader.getFilesFromStream(in);
 		} finally {
 			closeQuietly(in);
@@ -173,6 +175,8 @@ public class YandexDiskApi {
 		long lastProgress = -1;
 		try {
 			in = execute(path, GET, params);
+			if (in == null)
+				return 0;
 			int n = 0;
 			byte[] buffs = new byte[BUFFER];
 			
@@ -218,10 +222,16 @@ public class YandexDiskApi {
 			params = new HashMap<String, String>();
 			params.put("Range", "bytes=" + String.valueOf(start) + "-");
 		}
+		InputStream in = null;
 		try {
-			return getStringFromStream(execute(path, GET, params));
+			in = execute(path, GET, params);
+			if (in == null)
+				return null;
+			return getStringFromStream(in);
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			closeQuietly(in);
 		}
 		return null;
 	}
@@ -236,10 +246,15 @@ public class YandexDiskApi {
 
 	protected synchronized boolean executeWithoutResult(String path, String method, Map<String, String> params,
 			HttpEntity entity) {
-		InputStream in = execute(path, method, params, entity);
-		boolean result = in != null;
-		closeQuietly(in);
-		return result;
+		InputStream in = null;
+		try {
+			in = execute(path, method, params, entity);
+			if (in == null)
+				return false;
+			return in != null;
+		} finally {
+			closeQuietly(in);
+		}
 	}
 	
 	protected InputStream execute(String path, String method) {
