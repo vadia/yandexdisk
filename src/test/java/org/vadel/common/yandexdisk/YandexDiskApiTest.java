@@ -37,6 +37,7 @@ public class YandexDiskApiTest {
 		assertNotNull(PASSW);
 		YandexDiskApi api = new YandexDiskApi(CLIENT_ID);
 		api.setCredentials(LOGIN, PASSW);
+		assertEquals(api.getUserLogin(), LOGIN);
 		api.createFolder(TEST_DIR);
 		api.uploadFile(TEST_FILE, TEST_FILE_BODY);
 
