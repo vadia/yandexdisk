@@ -209,20 +209,26 @@ public class YandexDiskApi {
 					start += n;
 					
 	        		long progress = start / chunkSize;
-	        		if (lastProgress != progress) {
-	        			try {
+	        		try {
+	        			if (lastProgress != progress) {
 	        				listener.onProgress(start);
-	        			} catch (InterruptedException e) {
-	        				break;
+	        				lastProgress = progress;
 	        			}
-	        			lastProgress = progress;
-	        		}
+	        			Thread.sleep(1);
+        			} catch (InterruptedException e) {
+        				break;
+        			}
 				}
         	} else {
 				while((n = in.read(buffs)) > 0) {
 					fos.write(buffs, 0, n);
 					start += n;
-				}
+					try { 
+	        			Thread.sleep(1);
+        			} catch (InterruptedException e) {
+        				break;
+        			}
+        		}
         	}
         
 		} catch (IOException e) {
