@@ -49,6 +49,7 @@ public class YandexDiskApi {
 	
 	public static final int ONE_MB = 1024*1024;
 	public static final int TEN_MB = 10*ONE_MB;
+	public static final int FIFTY_MB = 50*ONE_MB;
 	
 	private long chunkSize = TEN_MB;
 	
@@ -186,6 +187,15 @@ public class YandexDiskApi {
 		chunkSize = value;
 	}
 	
+	public InputStream getFileInputStream(String path, long start) {
+		HashMap<String, String> params = null;
+		if (start > 0) {
+			params = new HashMap<String, String>();
+			params.put("Range", "bytes=" + String.valueOf(start) + "-");
+		}
+		return execute(path, GET, params);
+	}
+	
 	public synchronized long downloadFile(String path, FileOutputStream fos, long start,
 			OnLoadProgressListener listener) {
 		HashMap<String, String> params = null;
@@ -308,6 +318,7 @@ public class YandexDiskApi {
 			
 			req.addHeader("Accept", "*/*");
 			req.addHeader("Authorization", getAuthorization());
+			req.addHeader("Origin", BASE_URI);
 			if (params != null)
 				for (String key : params.keySet()) 
 					req.addHeader(key, params.get(key));
@@ -318,13 +329,13 @@ public class YandexDiskApi {
 				System.out.println("Request Headers:");
 				System.out.println(req.getRequestLine());
 				for (Header h : req.getAllHeaders()) 
-					System.out.println(h.getName() + ":" + h.getValue());
+					System.out.println("   " + h.getName() + ":" + h.getValue());
 			}
 			HttpClient client = new DefaultHttpClient();
 			HttpResponse resp = client.execute(req);
 			if (resp == null)
 				return null;
-
+			
 			int code = resp.getStatusLine().getStatusCode();
 			if (code != 201 && code != 200 && code != 206 && code != 207) {
 				closeQuietly(resp.getEntity().getContent());
@@ -335,7 +346,7 @@ public class YandexDiskApi {
 				System.out.println("Response Headers");
 				System.out.println(resp.getStatusLine());
 				for (Header h : resp.getAllHeaders()) 
-					System.out.println(h.getName() + ":" + h.getValue());
+					System.out.println("   " + h.getName() + ":" + h.getValue());
 				System.out.println();
 			}
 			return resp.getEntity().getContent();
@@ -347,7 +358,7 @@ public class YandexDiskApi {
 		return null;
 	}
 	
-	protected String getAuthorization() {
+	public String getAuthorization() {
 		if (auth != null && auth.isValid())
 			return auth.getAuthorizationHeader();
 		else
