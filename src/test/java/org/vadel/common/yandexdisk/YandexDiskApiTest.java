@@ -5,11 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 public class YandexDiskApiTest {
@@ -42,13 +38,13 @@ public class YandexDiskApiTest {
 		YandexDiskApi api = new YandexDiskApi(CLIENT_ID);
 		api.setCredentials(LOGIN, PASSW);
 		
-		ArrayList<WebDavFile> files = YandexDiskApi.getFiles(api.getAuthorization(),
-				"/audiobooks/Chuck Palahniuk - Rant/");
-		Assert.assertTrue(files != null && files.size() > 0);
-		String path = URLEncoder.encode("/audiobooks/Василий Ян – Чингисхан/", "utf-8");
-		files = YandexDiskApi.getFiles(api.getAuthorization(),
-				"/audiobooks/Василий Ян – Чингисхан/");
-		Assert.assertTrue(files != null && files.size() > 0);
+//		ArrayList<WebDavFile> files = YandexDiskApi.getFiles(api.getAuthorization(),
+//				"/audiobooks/Chuck Palahniuk - Rant/");
+//		Assert.assertTrue(files != null && files.size() > 0);
+//		String path = URLEncoder.encode("/audiobooks/Василий Ян – Чингисхан/", "utf-8");
+//		files = YandexDiskApi.getFiles(api.getAuthorization(),
+//				"/audiobooks/Василий Ян – Чингисхан/");
+//		Assert.assertTrue(files != null && files.size() > 0);
 		
 		
 		assertEquals(api.getUserLogin(), LOGIN);
