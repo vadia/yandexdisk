@@ -117,18 +117,7 @@ public class YandexDiskApi {
 		if (auth instanceof BasicAuthorization) {
 			return ((BasicAuthorization) auth).login;
 		} else if (auth instanceof OAuthAuthorization) {
-			InputStream in = null;
-			try {
-				in = execute(PATH_USER_LOGIN, GET, null);
-				String s = getStringFromStream(in);
-				if (s == null)
-					return null;
-				return s.replace("login:", "").trim(); 			
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				closeQuietly(in);
-			}
+			return getUserLogin(getAuthorization());
 		} 
 		return null;
 	}
@@ -164,19 +153,9 @@ public class YandexDiskApi {
 	}
 
 	public synchronized ArrayList<WebDavFile> getFiles(String path) {
-		InputStream in = null;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("Depth", "1");
-		try {
-			in = execute(path, PROPFIND, params);
-			if (in == null)
-				return null;
-			return XmlResponseReader.getFilesFromStream(in);
-		} finally {
-			closeQuietly(in);
-		}
+		return getFiles(getAuthorization(), path);		
 	}
-
+	
 	public long getChunkSize() {
 		return chunkSize;
 	}
@@ -188,12 +167,7 @@ public class YandexDiskApi {
 	}
 	
 	public InputStream getFileInputStream(String path, long start) {
-		HashMap<String, String> params = null;
-		if (start > 0) {
-			params = new HashMap<String, String>();
-			params.put("Range", "bytes=" + String.valueOf(start) + "-");
-		}
-		return execute(path, GET, params);
+		return getFileInputStream(getAuthorization(), path, start);
 	}
 	
 	public synchronized long downloadFile(String path, FileOutputStream fos, long start,
@@ -287,7 +261,7 @@ public class YandexDiskApi {
 			HttpEntity entity) {
 		InputStream in = null;
 		try {
-			in = execute(path, method, params, entity);
+			in = execute(getAuthorization(), path, method, params, entity);
 			if (in == null)
 				return false;
 			return in != null;
@@ -297,16 +271,56 @@ public class YandexDiskApi {
 	}
 	
 	protected InputStream execute(String path, String method) {
-		return execute(path, method, null, null);
+		return execute(path, method, null);
 	}
 
 	protected InputStream execute(String path, String method, Map<String, String> params) {
-		return execute(path, method, params, null);
+		return execute(getAuthorization(), path, method, params, null);
 	}
 
-	protected InputStream execute(String path, String method, Map<String, String> params,
+	public static String getUserLogin(String authorization) {
+		InputStream in = null;
+		try {
+			in = execute(authorization, PATH_USER_LOGIN, GET, null, null);
+			String s = getStringFromStream(in);
+			if (s == null)
+				return null;
+			return s.replace("login:", "").trim(); 			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			closeQuietly(in);
+		}
+		return null;
+	}
+	
+	public static ArrayList<WebDavFile> getFiles(String authorization, String path) {
+		InputStream in = null;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("Depth", "1");
+		try {
+			in = execute(authorization, path, PROPFIND, params, null);
+			if (in == null)
+				return null;
+			return XmlResponseReader.getFilesFromStream(in);
+		} finally {
+			closeQuietly(in);
+		}
+	}
+	
+	public static InputStream getFileInputStream(String authorization, String path, long start) {
+		HashMap<String, String> params = null;
+		if (start > 0) {
+			params = new HashMap<String, String>();
+			params.put("Range", "bytes=" + String.valueOf(start) + "-");
+		}
+		return execute(authorization, path, GET, params, null);
+	}
+
+	
+	public static InputStream execute(String authorization, String path, String method, Map<String, String> params,
 			HttpEntity entity) {
-		if (!isAuthorization())
+		if (authorization == null || authorization.length() == 0)
 			return null;
 		if (path == null || path.trim().length() == 0)
 			path = "/";
@@ -315,9 +329,10 @@ public class YandexDiskApi {
 				System.out.println("***" + method + " " + path + "***");
 			}
 			WebDavRequest req = new WebDavRequest(BASE_URI + path, method);
+//			WebDavRequest req = new WebDavRequest("https" , "webdav.yandex.ru", path, method);
 			
 			req.addHeader("Accept", "*/*");
-			req.addHeader("Authorization", getAuthorization());
+			req.addHeader("Authorization", authorization);
 			req.addHeader("Origin", BASE_URI);
 			if (params != null)
 				for (String key : params.keySet()) 
