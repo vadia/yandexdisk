@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.vadel.common</groupId>
 	<artifactId>yandexdisk</artifactId>
-	<version>0.0.6</version>
+	<version>0.1.1</version>
 	<name>Yandex Disk Api</name>
 	<developers>
 	    <developer>
@@ -14,7 +14,13 @@
 
 	<dependencies>
 
-		<dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20090211</version>
+        </dependency>
+
+        <dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpmime</artifactId>
 			<version>4.0.3</version>

@@ -1,3 +1,4 @@
 src/test/resources/credentials.txt
 target/
 /install.bat
+.idea
