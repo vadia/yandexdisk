@@ -14,9 +14,15 @@ public class YandexDiskApiTest {
 
 	public static String CLIENT_ID;
 	
-	public static String LOGIN;
-	public static String PASSW;
-	
+	/*
+	 * 1. Register app with callback uri = https://oauth.yandex.ru/verification_code?dev=true
+	 * 2. https://oauth.yandex.ru/authorize?response_type=token&client_id=<your_client_id>
+	 * 3. You will redirect to https://oauth.yandex.ru/verification_code?dev=True#access_token=<your_new_access_token>
+	 */
+	public static String TOKEN;
+//	public static String LOGIN;
+//	public static String PASSW;
+//	
 	public static final String TEST_DIR       = "/test-api-dir/";
 	public static final String TEST_FILE      = TEST_DIR + "test-api-file";
 	public static final String TEST_FILE1     = TEST_DIR + "Atest-api-file1";
@@ -29,14 +35,16 @@ public class YandexDiskApiTest {
 	
 	@Test
 	public void yandexApiRangeDownloadTest() throws IOException {
-		if (CLIENT_ID == null && LOGIN == null && PASSW == null)
+		if (CLIENT_ID == null && TOKEN == null)// && LOGIN == null && PASSW == null)
 			loadFromResource();
 		
 		assertNotNull(CLIENT_ID);
-		assertNotNull(LOGIN);
-		assertNotNull(PASSW);
+		assertNotNull(TOKEN);
+//		assertNotNull(LOGIN);
+//		assertNotNull(PASSW);
 		YandexDiskApi api = new YandexDiskApi(CLIENT_ID);
-		api.setCredentials(LOGIN, PASSW);
+//		api.setCredentials(LOGIN, PASSW);
+		api.setToken(TOKEN);
 		
 //		ArrayList<WebDavFile> files = YandexDiskApi.getFiles(api.getAuthorization(),
 //				"/audiobooks/Chuck Palahniuk - Rant/");
@@ -47,10 +55,14 @@ public class YandexDiskApiTest {
 //		Assert.assertTrue(files != null && files.size() > 0);
 		
 		
-		assertEquals(api.getUserLogin(), LOGIN);
+//		assertEquals(api.getUserLogin(), LOGIN);
 		api.createFolder(TEST_DIR);
 		api.uploadFile(TEST_FILE, TEST_FILE_BODY);
 
+		String downloadUri = api.getDownloadUrl(TEST_FILE);
+		assertNotNull(downloadUri);
+		System.out.println("Download url: " + downloadUri);
+		
 		String s = api.getFileString(TEST_FILE, RANGE_START);
 		System.out.println(s);
 		assertEquals(s.length(), TEST_FILE_BODY.length() - RANGE_START);
@@ -91,10 +103,12 @@ public class YandexDiskApiTest {
 				if (vals.length == 2) {
 					if (vals[0].equals("client_id"))
 						CLIENT_ID = vals[1];
-					else if (vals[0].equals("login"))
-						LOGIN = vals[1];
-					else if (vals[0].equals("passw"))
-						PASSW = vals[1];
+					else if (vals[0].equals("token"))
+						TOKEN = vals[1];
+//					else if (vals[0].equals("login"))
+//						LOGIN = vals[1];
+//					else if (vals[0].equals("passw"))
+//						PASSW = vals[1];
 				}
 			}			
 		}		

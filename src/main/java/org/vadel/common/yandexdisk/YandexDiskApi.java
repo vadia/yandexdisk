@@ -7,10 +7,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -19,6 +26,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.vadel.yandexdisk.authorization.Authorization;
 import org.vadel.yandexdisk.authorization.BasicAuthorization;
 import org.vadel.yandexdisk.authorization.OAuthAuthorization;
@@ -30,6 +39,8 @@ public class YandexDiskApi {
 	private static final String PARSE_TOKEN = "#access_token=";
 	
 	public static final String BASE_URI = "https://webdav.yandex.ru";
+	
+	public static final String GET_DOWNLOAD_URL = "https://cloud-api.yandex.net/v1/disk/resources/download?path=";
 	
 	protected static final String BASE_OAUTH_AUTHORIZE_URL = 
 		"https://oauth.yandex.ru/authorize?response_type=token&client_id=";
@@ -353,7 +364,8 @@ public class YandexDiskApi {
 			
 			int code = resp.getStatusLine().getStatusCode();
 			if (code != 201 && code != 200 && code != 206 && code != 207) {
-				closeQuietly(resp.getEntity().getContent());
+				if (resp.getEntity() != null)
+					closeQuietly(resp.getEntity().getContent());
 				return null;
 //				throw new HttpResponseException(code, resp.getStatusLine().getReasonPhrase());
 			}
@@ -379,6 +391,54 @@ public class YandexDiskApi {
 		else
 			return null;
 	}
+	
+	/** 
+	 * Only OAuth authorization
+	 * @param path - path to file in yandex disk
+	 * @return Download url or null
+	 */
+	public String getDownloadUrl(String path) {
+		if (auth == null || !(auth instanceof OAuthAuthorization))
+			return null;
+		try {
+	  		URL Url = new URL(GET_DOWNLOAD_URL + URLEncoder.encode(path, "UTF-8"));
+	  		HttpURLConnection conn = (HttpURLConnection) Url.openConnection();
+	  		if (conn == null)
+	  			return null;
+	  		HttpURLConnection.setFollowRedirects(true);	
+	  		conn.setReadTimeout(20000);
+	  		conn.setConnectTimeout(20000);
+	  		conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
+	  		conn.addRequestProperty("Authorization", getAuthorization());
+	  		InputStream in = getInputEncoding(conn);
+	  		if (in == null)
+	  			return null;
+	  		String s = getStringFromStream(in);
+	  		if (s == null)
+	  			return null;
+	  		return new JSONObject(s).getString("href");
+	  	} catch (MalformedURLException e) {
+	  		e.printStackTrace();
+	  	} catch (IOException e) {
+	  		e.printStackTrace();
+	  	} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static InputStream getInputEncoding(URLConnection connection) throws IOException {
+		InputStream in;
+		String encoding = connection.getContentEncoding();
+		if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
+			in = new GZIPInputStream(connection.getInputStream());
+		} else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
+			in = new InflaterInputStream(connection.getInputStream(), new Inflater(true));
+		} else {
+			in = connection.getInputStream();
+		}
+		return in;
+	}	
 	
 	public static String getStringFromStream(InputStream in) throws IOException {
 		InputStreamReader isr = new InputStreamReader(in);
