@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 import org.junit.Test;
 
@@ -40,6 +41,13 @@ public class YandexDiskApiTest {
 		
 		assertNotNull(CLIENT_ID);
 		assertNotNull(TOKEN);
+		
+//		CLIENT_ID = "";
+//		TOKEN = "e0756fd1fa0746de9e7859e54a5a3937";
+//		String yandexToken =  "e0756fd1fa0746de9e7859e54a5a3937";
+//		int sz = YandexDiskApi.getFiles("OAuth " + yandexToken, "/audiobooks").size();
+//		String url = YandexDiskApi.getDownloadUrl("OAuth " + yandexToken, "/133336_1600x1200.jpg"); 
+//		System.out.println("Download url: " + url + ", " + sz);
 //		assertNotNull(LOGIN);
 //		assertNotNull(PASSW);
 		YandexDiskApi api = new YandexDiskApi(CLIENT_ID);

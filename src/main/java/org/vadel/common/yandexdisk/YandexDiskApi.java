@@ -400,6 +400,12 @@ public class YandexDiskApi {
 	public String getDownloadUrl(String path) {
 		if (auth == null || !(auth instanceof OAuthAuthorization))
 			return null;
+		return getDownloadUrl(auth.getAuthorizationHeader(), path);
+	}
+	
+	public static String getDownloadUrl(String auth, String path) {
+		if (auth == null || auth.length() == 0)
+			return null;
 		try {
 	  		URL Url = new URL(GET_DOWNLOAD_URL + URLEncoder.encode(path, "UTF-8"));
 	  		HttpURLConnection conn = (HttpURLConnection) Url.openConnection();
@@ -409,7 +415,7 @@ public class YandexDiskApi {
 	  		conn.setReadTimeout(20000);
 	  		conn.setConnectTimeout(20000);
 	  		conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
-	  		conn.addRequestProperty("Authorization", getAuthorization());
+	  		conn.addRequestProperty("Authorization", auth);
 	  		InputStream in = getInputEncoding(conn);
 	  		if (in == null)
 	  			return null;
