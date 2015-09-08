@@ -1,4 +1,4 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.yandexdisk;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -31,6 +31,8 @@ import org.json.JSONObject;
 import org.vadel.yandexdisk.authorization.Authorization;
 import org.vadel.yandexdisk.authorization.BasicAuthorization;
 import org.vadel.yandexdisk.authorization.OAuthAuthorization;
+import org.vadel.yandexdisk.webdav.WebDavFile;
+import org.vadel.yandexdisk.webdav.WebDavRequest;
 
 public class YandexDiskApi {
 	

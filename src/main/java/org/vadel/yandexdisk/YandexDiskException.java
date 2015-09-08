@@ -1,4 +1,4 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.yandexdisk;
 
 import org.apache.http.client.HttpResponseException;
 

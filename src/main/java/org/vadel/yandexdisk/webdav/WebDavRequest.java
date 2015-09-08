@@ -1,4 +1,4 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.yandexdisk.webdav;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;

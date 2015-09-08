@@ -1,9 +1,10 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.yandexdisk;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
+import org.vadel.yandexdisk.webdav.WebDavFile;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;

@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.junit.Test;
+import org.vadel.yandexdisk.YandexDiskApi;
+import org.vadel.yandexdisk.webdav.WebDavFile;
 
 public class YandexDiskApiTest {
 
@@ -70,6 +72,9 @@ public class YandexDiskApiTest {
 		String downloadUri = api.getDownloadUrl(TEST_FILE);
 		assertNotNull(downloadUri);
 		System.out.println("Download url: " + downloadUri);
+		
+		ArrayList<WebDavFile> files = api.getFiles(TEST_FILE);
+		System.out.println("files: " + files.size());
 		
 		String s = api.getFileString(TEST_FILE, RANGE_START);
 		System.out.println(s);
