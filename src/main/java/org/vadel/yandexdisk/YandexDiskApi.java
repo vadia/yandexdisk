@@ -1,4 +1,4 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.yandexdisk;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -31,6 +31,8 @@ import org.json.JSONObject;
 import org.vadel.yandexdisk.authorization.Authorization;
 import org.vadel.yandexdisk.authorization.BasicAuthorization;
 import org.vadel.yandexdisk.authorization.OAuthAuthorization;
+import org.vadel.yandexdisk.webdav.WebDavFile;
+import org.vadel.yandexdisk.webdav.WebDavRequest;
 
 public class YandexDiskApi {
 	
@@ -400,6 +402,12 @@ public class YandexDiskApi {
 	public String getDownloadUrl(String path) {
 		if (auth == null || !(auth instanceof OAuthAuthorization))
 			return null;
+		return getDownloadUrl(auth.getAuthorizationHeader(), path);
+	}
+	
+	public static String getDownloadUrl(String auth, String path) {
+		if (auth == null || auth.length() == 0)
+			return null;
 		try {
 	  		URL Url = new URL(GET_DOWNLOAD_URL + URLEncoder.encode(path, "UTF-8"));
 	  		HttpURLConnection conn = (HttpURLConnection) Url.openConnection();
@@ -409,7 +417,7 @@ public class YandexDiskApi {
 	  		conn.setReadTimeout(20000);
 	  		conn.setConnectTimeout(20000);
 	  		conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
-	  		conn.addRequestProperty("Authorization", getAuthorization());
+	  		conn.addRequestProperty("Authorization", auth);
 	  		InputStream in = getInputEncoding(conn);
 	  		if (in == null)
 	  			return null;

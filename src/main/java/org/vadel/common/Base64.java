@@ -1,4 +1,4 @@
-package org.vadel.common.yandexdisk;
+package org.vadel.common;
 
 public class Base64 {
 

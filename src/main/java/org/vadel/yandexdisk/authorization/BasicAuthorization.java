@@ -1,7 +1,6 @@
 package org.vadel.yandexdisk.authorization;
 
-import org.vadel.common.yandexdisk.Base64;
-
+import org.vadel.common.Base64;
 
 public class BasicAuthorization extends Authorization {
 

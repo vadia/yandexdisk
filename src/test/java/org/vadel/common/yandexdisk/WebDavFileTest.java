@@ -1,6 +1,7 @@
 package org.vadel.common.yandexdisk;
 
 import org.junit.Test;
+import org.vadel.yandexdisk.webdav.WebDavFile;
 
 import static junit.framework.Assert.*;
 
