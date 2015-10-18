@@ -1,0 +1,54 @@
+#!/bin/bash
+
+pull_hg() 
+{
+	hg pull -u
+	pull_success
+}
+
+pull_git() 
+{
+	git pull
+	pull_success
+}
+
+make() 
+{
+	./make
+}
+
+pull_success()
+{
+	if [ -f make ];
+	then
+		make
+	else
+		success
+	fi
+}
+
+success() 
+{
+  echo "********************************************"
+  echo "************** MAKE SUCCESS ****************"
+  echo "********************************************"
+  exit 0
+}
+
+fail() 
+{
+  echo "********************************************"
+  echo "************** MAKE FAIL *******************"
+  echo "********************************************"
+  exit 1
+}
+
+if [ -d ".hg" ]; then
+	pull_hg
+else 
+	if [ -d ".git" ]; then
+		pull_git
+	else
+		fail
+	fi
+fi
