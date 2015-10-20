@@ -1,12 +1,12 @@
 package org.vadel.yandexdisk.webdav;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-
 import org.apache.http.client.methods.HttpPost;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+
+@SuppressWarnings("unused")
 public class WebDavRequest extends HttpPost {
 	
 	String method = "POST"; 
@@ -33,10 +33,9 @@ public class WebDavRequest extends HttpPost {
 	
 	/**
 	 * 
-	 * @param u
-	 * @return
+	 * @param u Url which need escape a path
+	 * @return Url escaped path
 	 * @throws UnsupportedEncodingException 
-	 * @throws URISyntaxException 
 	 */
 	public static String getURLPathEscape(String u) throws UnsupportedEncodingException {
 		if (u.contains("%"))

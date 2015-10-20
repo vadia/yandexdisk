@@ -1,31 +1,12 @@
 package org.vadel.yandexdisk;
 
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.vadel.yandexdisk.authorization.Authorization;
@@ -34,6 +15,16 @@ import org.vadel.yandexdisk.authorization.OAuthAuthorization;
 import org.vadel.yandexdisk.webdav.WebDavFile;
 import org.vadel.yandexdisk.webdav.WebDavRequest;
 
+import java.io.*;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
+
+@SuppressWarnings("unused")
 public class YandexDiskApi {
 	
 	public static boolean DEBUG = false;
@@ -60,8 +51,8 @@ public class YandexDiskApi {
 	
 	static int BUFFER = 1024;
 	
-	public static final int ONE_MB = 1024*1024;
-	public static final int TEN_MB = 10*ONE_MB;
+	public static final int ONE_MB   = 1024*1024;
+	public static final int TEN_MB   = 10*ONE_MB;
 	public static final int FIFTY_MB = 50*ONE_MB;
 	
 	private long chunkSize = TEN_MB;
@@ -69,7 +60,9 @@ public class YandexDiskApi {
 	protected final String clientId;
 
 	protected Authorization auth;
-	
+
+	final HttpClient client = HttpClientBuilder.create().build();
+
 	public YandexDiskApi(String clientId) {
 		this.clientId = clientId;
 	}
@@ -87,7 +80,7 @@ public class YandexDiskApi {
 		else
 			return null;
 	}
-	
+
 	public void setCredentials(String login, String pass) {
 		auth = new BasicAuthorization(login, pass);
 	}
@@ -109,7 +102,7 @@ public class YandexDiskApi {
 	
 	/**
 	 * Response example: http://aaaaa.aaaaa.com/callback#access_token=00a11b22c3333c44a7e7d6db623bd5e0&token_type=bearer&state=
-	 * @param value - Response uri
+	 * @param uri - Response uri
 	 */
 	public void setTokenFromCallBackURI(String uri) {
 		int i1 = uri.indexOf(PARSE_TOKEN);
@@ -130,7 +123,7 @@ public class YandexDiskApi {
 		if (auth instanceof BasicAuthorization) {
 			return ((BasicAuthorization) auth).login;
 		} else if (auth instanceof OAuthAuthorization) {
-			return getUserLogin(getAuthorization());
+			return getUserLogin(client, getAuthorization());
 		} 
 		return null;
 	}
@@ -146,13 +139,13 @@ public class YandexDiskApi {
 	public boolean copy(String src, String dst) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Destination", dst);
-		return executeWithoutResult(src, COPY);
+		return executeWithoutResult(src, COPY, params);
 	}
 
 	public boolean move(String src, String dst) {
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Destination", dst);
-		return executeWithoutResult(src, MOVE);
+		return executeWithoutResult(src, MOVE, params);
 	}
 
 	public boolean uploadFile(String path, InputStream dataStream, long fileLength) {
@@ -166,7 +159,7 @@ public class YandexDiskApi {
 	}
 
 	public synchronized ArrayList<WebDavFile> getFiles(String path) {
-		return getFiles(getAuthorization(), path);		
+		return getFiles(client, getAuthorization(), path);
 	}
 	
 	public long getChunkSize() {
@@ -180,7 +173,7 @@ public class YandexDiskApi {
 	}
 	
 	public InputStream getFileInputStream(String path, long start) {
-		return getFileInputStream(getAuthorization(), path, start);
+		return getFileInputStream(client, getAuthorization(), path, start);
 	}
 	
 	public synchronized long downloadFile(String path, FileOutputStream fos, long start,
@@ -196,7 +189,7 @@ public class YandexDiskApi {
 			in = execute(path, GET, params);
 			if (in == null)
 				return 0;
-			int n = 0;
+			int n;
 			byte[] buffs = new byte[BUFFER];
 			
 			
@@ -230,8 +223,6 @@ public class YandexDiskApi {
         
 		} catch (IOException e) {
 			e.printStackTrace();
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
 		} finally {
 			closeQuietly(in);
 		}
@@ -274,9 +265,7 @@ public class YandexDiskApi {
 			HttpEntity entity) {
 		InputStream in = null;
 		try {
-			in = execute(getAuthorization(), path, method, params, entity);
-			if (in == null)
-				return false;
+			in = execute(client, getAuthorization(), path, method, params, entity);
 			return in != null;
 		} finally {
 			closeQuietly(in);
@@ -288,17 +277,15 @@ public class YandexDiskApi {
 	}
 
 	protected InputStream execute(String path, String method, Map<String, String> params) {
-		return execute(getAuthorization(), path, method, params, null);
+		return execute(client, getAuthorization(), path, method, params, null);
 	}
 
-	public static String getUserLogin(String authorization) {
+	public static String getUserLogin(HttpClient client, String authorization) {
 		InputStream in = null;
 		try {
-			in = execute(authorization, PATH_USER_LOGIN, GET, null, null);
+			in = execute(client, authorization, PATH_USER_LOGIN, GET, null, null);
 			String s = getStringFromStream(in);
-			if (s == null)
-				return null;
-			return s.replace("login:", "").trim(); 			
+			return s.replace("login:", "").trim();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -307,12 +294,12 @@ public class YandexDiskApi {
 		return null;
 	}
 	
-	public static ArrayList<WebDavFile> getFiles(String authorization, String path) {
+	public static ArrayList<WebDavFile> getFiles(HttpClient client, String authorization, String path) {
 		InputStream in = null;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("Depth", "1");
 		try {
-			in = execute(authorization, path, PROPFIND, params, null);
+			in = execute(client, authorization, path, PROPFIND, params, null);
 			if (in == null)
 				return null;
 			return XmlResponseReader.getFilesFromStream(in);
@@ -321,17 +308,17 @@ public class YandexDiskApi {
 		}
 	}
 	
-	public static InputStream getFileInputStream(String authorization, String path, long start) {
+	public static InputStream getFileInputStream(HttpClient client, String authorization, String path, long start) {
 		HashMap<String, String> params = null;
 		if (start > 0) {
 			params = new HashMap<String, String>();
 			params.put("Range", "bytes=" + String.valueOf(start) + "-");
 		}
-		return execute(authorization, path, GET, params, null);
+		return execute(client, authorization, path, GET, params, null);
 	}
 
 	
-	public static InputStream execute(String authorization, String path, String method, Map<String, String> params,
+	public static InputStream execute(HttpClient client, String authorization, String path, String method, Map<String, String> params,
 			HttpEntity entity) {
 		if (authorization == null || authorization.length() == 0)
 			return null;
@@ -359,7 +346,7 @@ public class YandexDiskApi {
 				for (Header h : req.getAllHeaders()) 
 					System.out.println("   " + h.getName() + ":" + h.getValue());
 			}
-			HttpClient client = new DefaultHttpClient();
+
 			HttpResponse resp = client.execute(req);
 			if (resp == null)
 				return null;
@@ -422,8 +409,6 @@ public class YandexDiskApi {
 	  		if (in == null)
 	  			return null;
 	  		String s = getStringFromStream(in);
-	  		if (s == null)
-	  			return null;
 	  		return new JSONObject(s).getString("href");
 	  	} catch (MalformedURLException e) {
 	  		e.printStackTrace();
@@ -472,9 +457,7 @@ public class YandexDiskApi {
 			}
 	}
 	
-	public static interface OnLoadProgressListener {
-		
+	public interface OnLoadProgressListener {
 		void onProgress(long progress) throws InterruptedException;
-		
 	}
 }
