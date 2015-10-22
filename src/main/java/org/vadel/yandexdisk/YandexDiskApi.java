@@ -6,7 +6,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.vadel.yandexdisk.authorization.Authorization;
@@ -61,7 +61,8 @@ public class YandexDiskApi {
 
 	protected Authorization auth;
 
-	final HttpClient client = HttpClientBuilder.create().build();
+	// final HttpClient client = HttpClientBuilder.create().build();
+	HttpClient client = new DefaultHttpClient();
 
 	public YandexDiskApi(String clientId) {
 		this.clientId = clientId;

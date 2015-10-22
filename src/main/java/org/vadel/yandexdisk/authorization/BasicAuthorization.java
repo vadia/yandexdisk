@@ -1,6 +1,6 @@
 package org.vadel.yandexdisk.authorization;
 
-import org.vadel.common.Base64;
+import org.vadel.common.Helpers;
 
 public class BasicAuthorization extends Authorization {
 
@@ -18,6 +18,6 @@ public class BasicAuthorization extends Authorization {
 	
 	@Override
 	public String getAuthorizationHeader() {
-		return "Basic " + Base64.encode((login + ":" + pass).getBytes());//Base64Coder.encode(login + ":" + pass);;
+		return "Basic " + Helpers.encode((login + ":" + pass).getBytes());//Base64Coder.encode(login + ":" + pass);;
 	}
 }
