@@ -128,7 +128,11 @@ public class YandexDiskApi {
 		} 
 		return null;
 	}
-	
+
+	public String getUserName() {
+		return getUserName(client, getAuthorization());
+	}
+
 	public boolean createFolder(String path) {
 		return executeWithoutResult(path, MKCOL);
 	}
@@ -286,7 +290,14 @@ public class YandexDiskApi {
 		try {
 			in = execute(client, authorization, PATH_USER_LOGIN, GET, null, null);
 			String s = getStringFromStream(in);
-			return s.replace("login:", "").trim();
+			String[] ss = s.split("\n");
+			for (String ln: ss) {
+				if (ln.startsWith("login:")) {
+					return ln.substring(6);
+				}
+			}
+			return s;
+			// return s.replace("login:", "").trim();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -294,7 +305,37 @@ public class YandexDiskApi {
 		}
 		return null;
 	}
-	
+
+	public static String getUserName(HttpClient client, String authorization) {
+		InputStream in = null;
+		try {
+			in = execute(client, authorization, PATH_USER_LOGIN, GET, null, null);
+			String s = getStringFromStream(in);
+			String[] ss = s.split("\n");
+			StringBuilder name = new StringBuilder();
+			for (String ln: ss) {
+				if (ln.startsWith("fio:")) {
+					return ln.substring("fio:".length());
+				} else if (ln.startsWith("firstname")) {
+					if (name.length() > 0)
+						name.append(' ');
+					name.append(ln.substring("firstname:".length()));
+				} else if (ln.startsWith("lastname")) {
+					if (name.length() > 0)
+						name.append(' ');
+					name.append(ln.substring("lastname:".length()));
+				}
+			}
+			return name.toString();
+			// return s.replace("login:", "").trim();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			closeQuietly(in);
+		}
+		return null;
+	}
+
 	public static ArrayList<WebDavFile> getFiles(HttpClient client, String authorization, String path) {
 		InputStream in = null;
 		HashMap<String, String> params = new HashMap<String, String>();
