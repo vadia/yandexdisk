@@ -87,14 +87,14 @@ public class DropboxApi {
 	public InputStream getFileStream(String path) {
 		if (!isAuthenticated())
 			return null;
-		String uri = FILES + root + "/" + path + "?access_token=" + accessToken;
+		String uri = FILES + root + "/" + encodePaths(path) + "?access_token=" + accessToken;
 		return getStreamFromUri(uri);
 	}
 
 	public String getFileString(String path) {
 		if (!isAuthenticated())
 			return null;
-		String uri = FILES + root + "/" + path + "?access_token=" + accessToken;
+		String uri = FILES + root + "/" + encodePaths(path) + "?access_token=" + accessToken;
 		return getStringFromUrl(uri);
 	}
 	
@@ -113,7 +113,7 @@ public class DropboxApi {
 	public MediaUrl media(String path) {
 		if (!isAuthenticated())
 			return null;
-		return DropboxApi.media(root, accessToken, path);
+		return media(root, accessToken, path);
 	}
 	
 	public static AccountInfo accountInfo(String accessToken) {
